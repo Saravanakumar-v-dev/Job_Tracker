@@ -90,6 +90,7 @@ exports.githubLogin = async (req, res) => {
         const userResponse = await fetch('https://api.github.com/user', {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
+                'User-Agent': 'Job-Tracker-App',
             },
         });
         const githubUser = await userResponse.json();
@@ -98,12 +99,15 @@ exports.githubLogin = async (req, res) => {
             const emailsResponse = await fetch('https://api.github.com/user/emails', {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
+                    'User-Agent': 'Job-Tracker-App',
                 },
             });
             const emails = await emailsResponse.json();
-            const primaryEmail = emails.find(e => e.primary) || emails[0];
-            if (primaryEmail) {
-                githubUser.email = primaryEmail.email;
+            if (Array.isArray(emails)) {
+                const primaryEmail = emails.find(e => e.primary) || emails[0];
+                if (primaryEmail) {
+                    githubUser.email = primaryEmail.email;
+                }
             }
         }
 
@@ -136,6 +140,7 @@ exports.githubLogin = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('GitHub Auth Error:', error);
+        res.status(500).json({ message: error.message || 'Internal Server Error' });
     }
 };

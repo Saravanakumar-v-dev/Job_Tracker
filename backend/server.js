@@ -9,10 +9,18 @@ const jobRoutes = require('./routes/jobRoutes');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Adjust port if your local frontend uses a different one
+    credentials: true,
+}));
 app.use(express.json());
 
 // Routes
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.send('Job Tracker API is running smoothly...');
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 

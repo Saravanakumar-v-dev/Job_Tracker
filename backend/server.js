@@ -10,7 +10,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Adjust port if your local frontend uses a different one
+    origin: ['http://localhost:5173', 'https://job-tracker-gold-ten.vercel.app', process.env.FRONTEND_URL],
     credentials: true,
 }));
 app.use(express.json());

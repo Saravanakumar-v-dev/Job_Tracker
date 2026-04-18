@@ -1,11 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
 import { Jobs } from './pages/Jobs';
+import { Copilot } from './pages/Copilot';
+import { Login } from './pages/Login';
 import { Profile } from './pages/Profile';
+import { Register } from './pages/Register';
 
 function App() {
   return (
@@ -13,14 +14,14 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
-        {/* Protected Routes wrapped in Layout */}
+
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
+          <Route path="copilot" element={<Copilot />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="profile" element={<Profile />} />
         </Route>
-        
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

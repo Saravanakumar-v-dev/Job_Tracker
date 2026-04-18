@@ -276,6 +276,15 @@
     min-height: 100vh;
   }
 
+  .text-theme-heading,
+  .theme-text-heading { color: var(--text-heading); }
+  .text-theme-primary,
+  .theme-text-primary { color: var(--text-primary); }
+  .text-theme-secondary,
+  .theme-text-secondary { color: var(--text-secondary); }
+  .text-theme-muted,
+  .theme-text-muted { color: var(--text-muted); }
+
   .theme-text-primary   { color: var(--text-primary); }
   .theme-text-secondary { color: var(--text-secondary); }
   .theme-text-muted     { color: var(--text-muted); }

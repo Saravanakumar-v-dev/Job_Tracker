@@ -5,6 +5,8 @@ const {
     round,
     uniqueValues,
     normalizeText,
+    sanitizeCompanyName,
+    sanitizeRoleTitle,
     extractJobSignals,
     extractBulletLines,
     calculateResumeQuality,
@@ -199,9 +201,70 @@ const buildHeuristicSuggestions = ({ resumeText, jobDescription, analysis }) => 
     };
 };
 
+const buildHeuristicResumeOptimization = ({
+    resumeText,
+    jobDescription,
+    targetRole,
+    companyName,
+    analysis,
+}) => {
+    const roleLabel = sanitizeRoleTitle(targetRole?.trim()) || 'Target Role';
+    const companyLabel = sanitizeCompanyName(companyName?.trim());
+    const topSkills = uniqueValues([
+        ...(analysis?.matchedSkills || []),
+        ...(analysis?.missingSkills || []),
+    ]).slice(0, 8);
+    const focusKeywords = uniqueValues([
+        ...(analysis?.missingKeywords || []),
+        ...(analysis?.missingSkills || []),
+        ...(analysis?.matchedSkills || []),
+    ]).slice(0, 6);
+    const bulletCandidates = extractBulletLines(resumeText).slice(0, 4);
+    const optimizedBulletPoints = uniqueValues(
+        bulletCandidates.map((bullet) => rewriteBulletPoint(bullet, focusKeywords)).filter(Boolean),
+    ).slice(0, 4);
+    const introSkills = topSkills.slice(0, 3).join(', ');
+    const supportingSkills = topSkills.slice(3, 6).join(', ');
+    const missingSkillsText = (analysis?.missingSkills || []).slice(0, 2).join(' and ');
+
+    const optimizedHeadline = [roleLabel, introSkills].filter(Boolean).join(' | ');
+    const professionalSummary = [
+        `${roleLabel} candidate with hands-on experience across ${introSkills || 'core delivery, execution, and cross-functional collaboration'}.`,
+        companyLabel ? `Tailored for the ${companyLabel} opportunity` : 'Tailored to the current job description',
+        supportingSkills ? `with emphasis on ${supportingSkills}.` : 'with emphasis on measurable business impact.',
+        missingSkillsText ? `Strengthen the final draft by explicitly surfacing ${missingSkillsText} where it is accurate.` : '',
+    ].filter(Boolean).join(' ');
+
+    const keywordIncorporationTips = uniqueValues([
+        ...(analysis?.focusAreas || []).slice(0, 4),
+        'Move the most role-relevant tools and domain keywords into the summary and top skills block.',
+        'Keep every keyword grounded in real work, outcomes, or ownership to stay credible.',
+    ]).slice(0, 6);
+
+    const optimizationNotes = uniqueValues([
+        `Lead with the title "${roleLabel}" so recruiters instantly see role alignment.`,
+        topSkills.length ? `Feature ${topSkills.slice(0, 5).join(', ')} near the top of the resume.` : '',
+        'Prioritize bullets that show scope, impact, and measurable outcomes over task lists.',
+        companyLabel ? `Mirror the language used in ${companyLabel}'s job description when it truthfully matches your background.` : 'Mirror the language used in the job description when it truthfully matches your background.',
+    ]).slice(0, 5);
+
+    return {
+        provider: 'heuristic',
+        targetRole: roleLabel,
+        optimizedHeadline,
+        professionalSummary,
+        optimizedSkills: topSkills,
+        optimizedBulletPoints,
+        keywordIncorporationTips,
+        optimizationNotes,
+    };
+};
+
 module.exports = {
     extractResumeText,
     analyzeResumeMatch,
     predictInterviewProbability,
+    rewriteBulletPoint,
     buildHeuristicSuggestions,
+    buildHeuristicResumeOptimization,
 };

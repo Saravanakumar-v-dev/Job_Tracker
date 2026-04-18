@@ -3,8 +3,13 @@ const {
     analyzeResumeMatch,
     predictInterviewProbability,
 } = require('../services/analysisService');
-const { generateResumeSuggestions } = require('../services/openAIService');
+const {
+    generateResumeSuggestions,
+    optimizeResumeForRole,
+} = require('../services/openAIService');
 const { extractJobDetails } = require('../services/jobExtractionService');
+const { buildResumeDraft } = require('../services/resumeDraftService');
+const { sanitizeCompanyName, sanitizeRoleTitle } = require('../utils/text');
 
 const buildAnalysisResponse = ({ resumeText, jobDescription }) => {
     const analysis = analyzeResumeMatch({ resumeText, jobDescription });
@@ -56,6 +61,42 @@ exports.generateSuggestions = async (req, res) => {
     res.status(200).json({
         resumeText,
         ...suggestions,
+    });
+};
+
+exports.optimizeResume = async (req, res) => {
+    const normalizedTargetRole = sanitizeRoleTitle(req.body.targetRole);
+    const normalizedCompanyName = sanitizeCompanyName(req.body.companyName);
+    const resumeText = await extractResumeText({
+        resumeText: req.body.resumeText,
+        resumeFileData: req.body.resumeFileData,
+        fileName: req.body.fileName,
+    });
+    const analysis = buildAnalysisResponse({
+        resumeText,
+        jobDescription: req.body.jobDescription,
+    });
+    const optimization = await optimizeResumeForRole({
+        resumeText,
+        jobDescription: req.body.jobDescription,
+        targetRole: normalizedTargetRole,
+        companyName: normalizedCompanyName,
+        analysis,
+    });
+    const resumeDraft = buildResumeDraft({
+        resumeText,
+        optimization,
+        fileName: req.body.fileName,
+        candidateName: req.body.candidateName,
+        targetRole: normalizedTargetRole,
+        companyName: normalizedCompanyName,
+    });
+
+    res.status(200).json({
+        resumeText,
+        analysis,
+        resumeDraft,
+        ...optimization,
     });
 };
 

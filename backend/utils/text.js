@@ -292,6 +292,8 @@ const DISPLAY_MAP = {
     websockets: 'WebSockets',
 };
 
+const JOB_BOARD_SUFFIX_PATTERN = /\s*[|/-]\s*(linkedin|indeed|glassdoor|naukri|monster|ziprecruiter|lever|greenhouse)\b.*$/i;
+
 const clampNumber = (value, min = 0, max = 100) => {
     if (Number.isNaN(Number(value))) {
         return min;
@@ -314,6 +316,37 @@ const normalizeText = (value = '') =>
         .replace(/[^\w\s+.#/-]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+
+const sanitizeCompanyName = (value = '') =>
+    value
+        .replace(JOB_BOARD_SUFFIX_PATTERN, '')
+        .replace(/\s+(?:is\s+)?hiring\s+.+$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+const sanitizeRoleTitle = (value = '') => {
+    let output = value
+        .replace(JOB_BOARD_SUFFIX_PATTERN, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const linkedInHiringMatch = output.match(/^(.+?)\s+(?:is\s+)?hiring\s+(.+?)\s+in\s+.+$/i);
+    if (linkedInHiringMatch) {
+        return linkedInHiringMatch[2].trim();
+    }
+
+    const hiringMatch = output.match(/^(.+?)\s+(?:is\s+)?hiring\s+(.+)$/i);
+    if (hiringMatch) {
+        return hiringMatch[2].trim();
+    }
+
+    const atCompanyMatch = output.match(/^(.+?)\s+at\s+.+$/i);
+    if (atCompanyMatch) {
+        output = atCompanyMatch[1].trim();
+    }
+
+    return output;
+};
 
 const tokenize = (value = '') =>
     normalizeText(value)
@@ -464,6 +497,8 @@ module.exports = {
     round,
     uniqueValues,
     normalizeText,
+    sanitizeCompanyName,
+    sanitizeRoleTitle,
     tokenize,
     toDisplayLabel,
     extractSkills,

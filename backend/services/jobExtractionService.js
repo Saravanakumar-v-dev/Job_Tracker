@@ -1,5 +1,6 @@
 const cheerio = require('cheerio');
 const { createHttpError } = require('../utils/httpError');
+const { sanitizeCompanyName, sanitizeRoleTitle } = require('../utils/text');
 
 const cleanText = (value = '') =>
     value
@@ -19,11 +20,16 @@ const readFirstMatch = ($, selectors = []) => {
 };
 
 const inferCompanyFromTitle = (pageTitle = '') => {
+    const linkedInHiringMatch = cleanText(pageTitle).match(/^(.+?)\s+(?:is\s+)?hiring\s+(.+?)\s+in\s+.+$/i);
+    if (linkedInHiringMatch) {
+        return sanitizeCompanyName(linkedInHiringMatch[1]);
+    }
+
     const separators = [' - ', ' | ', ' @ ', ' at '];
 
     for (const separator of separators) {
         if (pageTitle.includes(separator)) {
-            return cleanText(pageTitle.split(separator).slice(1).join(separator));
+            return sanitizeCompanyName(cleanText(pageTitle.split(separator).slice(1).join(separator)));
         }
     }
 
@@ -82,19 +88,21 @@ const extractJobDetails = async (targetUrl) => {
     const html = await response.text();
     const $ = cheerio.load(html);
     const pageTitle = cleanText($('title').text());
-    const jobTitle = readFirstMatch($, [
+    const rawJobTitle = readFirstMatch($, [
         'meta[property="og:title"]',
         'meta[name="twitter:title"]',
         'h1',
         '[data-testid="jobsearch-JobInfoHeader-title"]',
     ]) || pageTitle;
-    const companyName = readFirstMatch($, [
+    const rawCompanyName = readFirstMatch($, [
         '[data-testid="inlineHeader-companyName"]',
         '[data-testid="jobsearch-CompanyInfoContainer"]',
         '.jobsearch-CompanyInfoWithoutHeaderImage div',
         '.company',
         '.employer',
     ]) || inferCompanyFromTitle(pageTitle);
+    const jobTitle = sanitizeRoleTitle(rawJobTitle);
+    const companyName = sanitizeCompanyName(rawCompanyName);
     const jobDescription = extractRichDescription($);
 
     if (!jobTitle && !jobDescription) {

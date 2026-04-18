@@ -59,7 +59,7 @@ const StatCard = ({ icon, title, value, helper }) => (
 );
 
 const ChartCard = ({ title, description, children, action }) => (
-    <div className="glass-card rounded-3xl p-6">
+    <div className="glass-card rounded-3xl p-6 min-w-0 overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
             <div>
                 <h3 className="text-xl font-display font-bold text-theme-heading">{title}</h3>
@@ -203,14 +203,14 @@ export const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-                <div className="xl:col-span-3 space-y-6">
+                <div className="xl:col-span-3 space-y-6 min-w-0">
                     <ChartCard
                         title="Application funnel"
                         description="A quick look at where your opportunities currently sit."
                         action={<div className="text-sm text-theme-secondary">{stats.totalApplications} total records</div>}
                     >
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-[300px] w-full min-w-0 min-h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
                                 <BarChart data={statusData} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
                                     <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
@@ -230,8 +230,8 @@ export const Dashboard = () => {
                         title="Six-month momentum"
                         description="Track how consistently you are applying and where interviews or offers are landing."
                     >
-                        <div className="h-[320px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-[320px] w-full min-w-0 min-h-[320px]">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
                                 <AreaChart data={stats.monthlyActivity} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="applicationsFill" x1="0" y1="0" x2="0" y2="1">
@@ -255,7 +255,7 @@ export const Dashboard = () => {
                     </ChartCard>
                 </div>
 
-                <div className="xl:col-span-2 space-y-6">
+                <div className="xl:col-span-2 space-y-6 min-w-0">
                     <ChartCard
                         title="Readiness scores"
                         description="How strong the tracked resumes look from an ATS and interview perspective."

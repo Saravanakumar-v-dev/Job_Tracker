@@ -1,4 +1,7 @@
-const { buildHeuristicSuggestions } = require('./analysisService');
+const {
+    buildHeuristicSuggestions,
+    buildHeuristicResumeOptimization,
+} = require('./analysisService');
 
 const RESPONSE_SCHEMA = {
     type: 'object',
@@ -22,6 +25,47 @@ const RESPONSE_SCHEMA = {
             items: { type: 'string' },
             minItems: 2,
             maxItems: 4,
+        },
+    },
+};
+
+const OPTIMIZATION_SCHEMA = {
+    type: 'object',
+    additionalProperties: false,
+    required: [
+        'optimizedHeadline',
+        'professionalSummary',
+        'optimizedSkills',
+        'optimizedBulletPoints',
+        'keywordIncorporationTips',
+        'optimizationNotes',
+    ],
+    properties: {
+        optimizedHeadline: { type: 'string' },
+        professionalSummary: { type: 'string' },
+        optimizedSkills: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 4,
+            maxItems: 10,
+        },
+        optimizedBulletPoints: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 2,
+            maxItems: 5,
+        },
+        keywordIncorporationTips: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 3,
+            maxItems: 6,
+        },
+        optimizationNotes: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 3,
+            maxItems: 5,
         },
     },
 };
@@ -114,6 +158,102 @@ const generateResumeSuggestions = async ({ resumeText, jobDescription, analysis 
     }
 };
 
+const optimizeResumeForRole = async ({
+    resumeText,
+    jobDescription,
+    targetRole,
+    companyName,
+    analysis,
+}) => {
+    const fallback = buildHeuristicResumeOptimization({
+        resumeText,
+        jobDescription,
+        targetRole,
+        companyName,
+        analysis,
+    });
+
+    if (!process.env.OPENAI_API_KEY) {
+        return fallback;
+    }
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+                input: [
+                    {
+                        role: 'system',
+                        content: 'You are an expert resume strategist. Return concise JSON only. Create ATS-friendly, honest resume optimizations tailored to the target role.',
+                    },
+                    {
+                        role: 'user',
+                        content: [
+                            `Target role: ${targetRole || 'Current job role'}`,
+                            companyName ? `Company: ${companyName}` : '',
+                            '',
+                            'Resume:',
+                            resumeText,
+                            '',
+                            'Job description:',
+                            jobDescription,
+                            '',
+                            `Known analysis: ATS ${analysis?.atsScore || 0}, skills ${analysis?.skillMatchPercentage || 0}, quality ${analysis?.resumeQualityScore || 0}.`,
+                            `Matched skills: ${(analysis?.matchedSkills || []).join(', ') || 'None detected'}.`,
+                            `Missing skills: ${(analysis?.missingSkills || []).join(', ') || 'None detected'}.`,
+                            'Create a role-targeted headline, a short professional summary, a prioritized skills list, rewritten resume bullets, and tactical notes for weaving keywords into the resume.',
+                        ].filter(Boolean).join('\n'),
+                    },
+                ],
+                text: {
+                    format: {
+                        type: 'json_schema',
+                        name: 'resume_optimizer',
+                        strict: true,
+                        schema: OPTIMIZATION_SCHEMA,
+                    },
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`OpenAI request failed with status ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const outputText = extractOutputText(payload);
+
+        if (!outputText) {
+            throw new Error('OpenAI response did not contain structured text output.');
+        }
+
+        const parsed = JSON.parse(outputText);
+
+        return {
+            provider: 'openai',
+            targetRole: targetRole || fallback.targetRole,
+            optimizedHeadline: parsed.optimizedHeadline || fallback.optimizedHeadline,
+            professionalSummary: parsed.professionalSummary || fallback.professionalSummary,
+            optimizedSkills: parsed.optimizedSkills || fallback.optimizedSkills,
+            optimizedBulletPoints: parsed.optimizedBulletPoints || fallback.optimizedBulletPoints,
+            keywordIncorporationTips: parsed.keywordIncorporationTips || fallback.keywordIncorporationTips,
+            optimizationNotes: parsed.optimizationNotes || fallback.optimizationNotes,
+        };
+    } catch (error) {
+        return {
+            ...fallback,
+            provider: 'heuristic',
+            fallbackReason: error.message,
+        };
+    }
+};
+
 module.exports = {
     generateResumeSuggestions,
+    optimizeResumeForRole,
 };

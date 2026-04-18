@@ -2,6 +2,7 @@ const express = require('express');
 const {
     analyzeResume,
     generateSuggestions,
+    optimizeResume,
     predictInterview,
     extractJobFromUrl,
 } = require('../controllers/copilotController');
@@ -13,6 +14,7 @@ router.use(protect);
 
 router.post('/analyze-resume', analyzeResume);
 router.post('/generate-suggestions', generateSuggestions);
+router.post('/optimize-resume', optimizeResume);
 router.post('/predict-interview', predictInterview);
 router.post('/extract-job', extractJobFromUrl);
 

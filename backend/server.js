@@ -13,6 +13,7 @@ const app = express();
 const allowedOrigins = [
     'http://localhost:5173',
     'https://job-tracker-gold-ten.vercel.app',
+    'https://job-tracker-sarav.vercel.app',
     process.env.FRONTEND_URL,
 ].filter(Boolean);
 

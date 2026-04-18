@@ -987,27 +987,27 @@ export const Copilot = () => {
                                         <CopyButton text={optimizedResume.resumeDraft.plainText} />
                                     </div>
 
-                                    <div className="mt-6 rounded-3xl border bg-white text-slate-900 p-6 sm:p-8" style={{ borderColor: 'rgba(15,23,42,0.08)' }}>
-                                        <div className="border-b pb-5" style={{ borderColor: 'rgba(15,23,42,0.12)' }}>
-                                            <h5 className="text-3xl font-display font-black">{optimizedResume.resumeDraft.name}</h5>
-                                            <p className="text-base font-semibold mt-2">{optimizedResume.resumeDraft.headline}</p>
+                                    <div className="mt-6 rounded-3xl border p-6 sm:p-8" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}>
+                                        <div className="border-b pb-5" style={{ borderColor: 'var(--border-color)' }}>
+                                            <h5 className="text-3xl font-display font-black theme-text-heading">{optimizedResume.resumeDraft.name}</h5>
+                                            <p className="text-base font-semibold mt-2 theme-text-heading">{optimizedResume.resumeDraft.headline}</p>
                                             {optimizedResume.resumeDraft.contactLine ? (
-                                                <p className="text-sm text-slate-600 mt-2">{optimizedResume.resumeDraft.contactLine}</p>
+                                                <p className="text-sm theme-text-secondary mt-2">{optimizedResume.resumeDraft.contactLine}</p>
                                             ) : null}
                                         </div>
 
                                         <div className="mt-6 space-y-6">
                                             {optimizedResume.resumeDraft.sections.map((section) => (
                                                 <div key={section.title}>
-                                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{section.title}</p>
+                                                    <p className="text-xs font-bold uppercase tracking-[0.18em] theme-text-secondary mb-3">{section.title}</p>
                                                     {section.variant === 'bullets' ? (
-                                                        <ul className="mt-3 space-y-2 list-disc pl-5 text-sm leading-relaxed">
+                                                        <ul className="space-y-2 list-disc pl-5 text-sm leading-relaxed text-theme-primary">
                                                             {section.items.map((item) => (
                                                                 <li key={item}>{item}</li>
                                                             ))}
                                                         </ul>
                                                     ) : (
-                                                        <div className="mt-3 space-y-2 text-sm leading-relaxed">
+                                                        <div className="space-y-2 text-sm leading-relaxed text-theme-primary">
                                                             {section.items.map((item) => (
                                                                 <p key={item}>{item}</p>
                                                             ))}

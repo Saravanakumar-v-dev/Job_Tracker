@@ -72,7 +72,7 @@ exports.optimizeResume = async (req, res) => {
         resumeFileData: req.body.resumeFileData,
         fileName: req.body.fileName,
     });
-    const analysis = buildAnalysisResponse({
+    const originalAnalysis = buildAnalysisResponse({
         resumeText,
         jobDescription: req.body.jobDescription,
     });
@@ -81,7 +81,7 @@ exports.optimizeResume = async (req, res) => {
         jobDescription: req.body.jobDescription,
         targetRole: normalizedTargetRole,
         companyName: normalizedCompanyName,
-        analysis,
+        analysis: originalAnalysis,
     });
     const resumeDraft = buildResumeDraft({
         resumeText,
@@ -92,9 +92,15 @@ exports.optimizeResume = async (req, res) => {
         companyName: normalizedCompanyName,
     });
 
+    // Recalculate analysis using the newly optimized resume draft text
+    const updatedAnalysis = buildAnalysisResponse({
+        resumeText: resumeDraft.plainText,
+        jobDescription: req.body.jobDescription,
+    });
+
     res.status(200).json({
         resumeText,
-        analysis,
+        analysis: updatedAnalysis,
         resumeDraft,
         ...optimization,
     });

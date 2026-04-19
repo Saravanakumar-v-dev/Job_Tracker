@@ -47,7 +47,7 @@ const OPTIMIZATION_SCHEMA = {
             type: 'array',
             items: { type: 'string' },
             minItems: 4,
-            maxItems: 10,
+            maxItems: 20,
         },
         optimizedBulletPoints: {
             type: 'array',
@@ -206,6 +206,8 @@ const optimizeResumeForRole = async ({
                             `Known analysis: ATS ${analysis?.atsScore || 0}, skills ${analysis?.skillMatchPercentage || 0}, quality ${analysis?.resumeQualityScore || 0}.`,
                             `Matched skills: ${(analysis?.matchedSkills || []).join(', ') || 'None detected'}.`,
                             `Missing skills: ${(analysis?.missingSkills || []).join(', ') || 'None detected'}.`,
+                            `Missing keywords: ${(analysis?.missingKeywords || []).join(', ') || 'None detected'}.`,
+                            'CRITICAL INSTRUCTION: To maximize the ATS score, you MUST ruthlessly integrate as many of the "Missing skills" and "Missing keywords" as possible into the optimizedHeadline, professionalSummary, optimizedSkills, and optimizedBulletPoints. Do not hallucinate false experience, but find creative, plausible ways to weave these exact keywords and skills into the text.',
                             'Create a role-targeted headline, a short professional summary, a prioritized skills list, rewritten resume bullets, and tactical notes for weaving keywords into the resume.',
                         ].filter(Boolean).join('\n'),
                     },

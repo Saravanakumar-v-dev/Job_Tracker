@@ -152,12 +152,12 @@ const buildResumeDraft = ({
         {
             title: 'Core Skills',
             variant: 'bullets',
-            items: (optimization.optimizedSkills || []).slice(0, 10),
+            items: (optimization.optimizedSkills || []),
         },
         {
             title: 'Targeted Experience Highlights',
             variant: 'bullets',
-            items: (optimization.optimizedBulletPoints || []).slice(0, 5),
+            items: (optimization.optimizedBulletPoints || []),
         },
     ];
 

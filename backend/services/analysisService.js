@@ -87,8 +87,8 @@ const analyzeResumeMatch = ({ resumeText, jobDescription }) => {
 
     const atsScore = clampNumber(
         round(
-            (keywordMatchPercentage * 0.45)
-            + (skillMatchPercentage * 0.35)
+            (skillMatchPercentage * 0.65)
+            + (keywordMatchPercentage * 0.15)
             + (resumeQuality.score * 0.20),
             0,
         ),

@@ -19,7 +19,14 @@ const allowedOrigins = [
 
 // Middleware
 app.use(cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, postman)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 app.use(express.json({ limit: '12mb' }));

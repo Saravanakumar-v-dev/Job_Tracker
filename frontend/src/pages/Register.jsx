@@ -51,7 +51,8 @@ export const Register = () => {
             toast.success('Account created successfully! Welcome aboard.');
             navigate('/');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create account');
+            console.error('Registration failed:', error);
+            toast.error(error.response?.data?.message || error.message || 'Failed to create account');
         } finally {
             setLoading(false);
         }

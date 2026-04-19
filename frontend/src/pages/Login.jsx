@@ -38,10 +38,11 @@ export const Login = () => {
         setLoading(true);
         try {
             await login(email, password);
-            toast.success('Welcome back to your workspace!');
+            toast.success('Welcome back to Mission Control!');
             navigate('/');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to login');
+            console.error('Login failed:', error);
+            toast.error(error.response?.data?.message || error.message || 'Failed to login');
         } finally {
             setLoading(false);
         }

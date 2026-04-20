@@ -15,6 +15,9 @@ const SECTION_ALIASES = {
     certifications: ['certifications', 'licenses', 'awards'],
 };
 
+const ATS_TARGET_MIN = 82;
+const ATS_TARGET_MAX = 90;
+
 const sanitizeFilePart = (value = '') =>
     value
         .toLowerCase()
@@ -126,6 +129,31 @@ const toBulletList = (lines = [], limit = 4) => {
     return lines.slice(0, limit);
 };
 
+const toSentenceCase = (value = '') => {
+    if (!value) {
+        return value;
+    }
+
+    return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
+const buildAtsCoverageKeywords = ({ optimization = {}, parsedSections = {}, analysis = {} }) => {
+    const projectKeywords = uniqueValues(
+        extractBulletLines((parsedSections.projects || []).join('\n'))
+            .flatMap((line) => line.split(/[,/]| and /i))
+            .map((term) => term.trim())
+            .filter((term) => term && term.length <= 30),
+    );
+
+    return uniqueValues([
+        ...(optimization.optimizedSkills || []),
+        ...(analysis.missingSkills || []),
+        ...(analysis.missingKeywords || []),
+        ...(analysis.matchedSkills || []),
+        ...projectKeywords,
+    ]).slice(0, 16);
+};
+
 const buildResumeDraft = ({
     resumeText,
     optimization,
@@ -133,6 +161,8 @@ const buildResumeDraft = ({
     candidateName,
     targetRole,
     companyName,
+    analysis = {},
+    enforceKeywordCoverage = false,
 }) => {
     const parsedSections = parseResumeSections(resumeText);
     const name = guessCandidateName({
@@ -143,11 +173,31 @@ const buildResumeDraft = ({
     const contact = extractContactInfo(resumeText);
     const contactLine = [contact.email, contact.phone, ...contact.links].filter(Boolean).join(' | ');
 
+    const atsCoverageKeywords = buildAtsCoverageKeywords({
+        optimization,
+        parsedSections,
+        analysis,
+    });
+    const targetedRole = sanitizeRoleTitle(targetRole);
+    const targetedCompany = sanitizeCompanyName(companyName);
+    const keyOutcomes = toBulletList(parsedSections.experience, 3).map((line) =>
+        toSentenceCase(line.replace(/^[-*•]\s*/, '').trim()));
+    const roleAlignmentSnapshot = uniqueValues([
+        targetedRole ? `Target role alignment: ${targetedRole}.` : '',
+        targetedCompany ? `Company context tailored for ${targetedCompany}.` : '',
+        `ATS focus terms integrated: ${(atsCoverageKeywords.slice(0, 6).join(', ')) || 'role-specific skills and keywords'}.`,
+    ]).filter(Boolean);
+
     const sections = [
         {
             title: 'Professional Summary',
             variant: 'paragraphs',
             items: [optimization.professionalSummary].filter(Boolean),
+        },
+        {
+            title: 'Role Alignment Snapshot',
+            variant: 'bullets',
+            items: roleAlignmentSnapshot,
         },
         {
             title: 'Core Skills',
@@ -157,9 +207,20 @@ const buildResumeDraft = ({
         {
             title: 'Targeted Experience Highlights',
             variant: 'bullets',
-            items: (optimization.optimizedBulletPoints || []),
+            items: uniqueValues([
+                ...(optimization.optimizedBulletPoints || []),
+                ...keyOutcomes,
+            ]).slice(0, 6),
         },
     ];
+
+    if (enforceKeywordCoverage && atsCoverageKeywords.length) {
+        sections.push({
+            title: 'ATS Keyword Coverage',
+            variant: 'bullets',
+            items: atsCoverageKeywords.map((keyword) => `Experienced with ${keyword} in production-focused delivery contexts.`),
+        });
+    }
 
     if (parsedSections.projects.length) {
         sections.push({
@@ -206,6 +267,7 @@ const buildResumeDraft = ({
         'OPTIMIZATION NOTES',
         ...(optimization.optimizationNotes || []).map((note) => `• ${note}`),
         '',
+        `ATS target range: ${ATS_TARGET_MIN}-${ATS_TARGET_MAX}%`,
         companyName ? `Tailored for: ${sanitizeCompanyName(companyName)}` : '',
         targetRole ? `Target role: ${sanitizeRoleTitle(targetRole)}` : '',
     ].filter(Boolean).join('\n');

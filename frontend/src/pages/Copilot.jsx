@@ -311,17 +311,21 @@ const buildResumeDownloadHtml = (draft) => `
     <meta charset="utf-8" />
     <title>${escapeHtml(draft.name)}</title>
     <style>
-      body { font-family: Arial, sans-serif; color: #111827; margin: 40px; line-height: 1.5; }
-      h1 { margin: 0; font-size: 26px; }
-      h2 { margin: 0 0 10px; font-size: 20px; }
-      h3 { margin: 28px 0 8px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: #4b5563; }
-      p { margin: 0 0 10px; }
+      body { font-family: "Calibri", "Segoe UI", Arial, sans-serif; color: #111827; margin: 26px 30px; line-height: 1.42; font-size: 11pt; }
+      h1 { margin: 0; font-size: 24pt; letter-spacing: 0.2px; text-align: left; }
+      h3 { margin: 14px 0 7px; font-size: 10pt; letter-spacing: 0.6px; text-transform: uppercase; color: #1f2937; border-bottom: 1px solid #d1d5db; padding-bottom: 3px; }
+      p { margin: 0 0 8px; }
       ul { margin: 0; padding-left: 18px; }
-      li { margin: 0 0 8px; }
-      .headline { margin-top: 8px; font-size: 16px; font-weight: 600; color: #1f2937; }
-      .contact { margin-top: 8px; color: #4b5563; font-size: 12px; }
-      .divider { margin: 22px 0 18px; border-top: 1px solid #d1d5db; }
-      .section { margin-top: 20px; }
+      li { margin: 0 0 5px; }
+      .headline { margin-top: 4px; font-size: 12.5pt; font-weight: 700; color: #111827; }
+      .contact { margin-top: 6px; color: #374151; font-size: 10.5pt; }
+      .divider { margin: 12px 0 10px; border-top: 1.5px solid #111827; }
+      .section { margin-top: 2px; }
+      .layout-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+      .layout-table td { vertical-align: top; padding: 0 10px 0 0; }
+      .left-col { width: 62%; }
+      .right-col { width: 38%; }
+      .skills-list { margin: 0; padding-left: 16px; }
     </style>
   </head>
   <body>
@@ -329,15 +333,33 @@ const buildResumeDownloadHtml = (draft) => `
     <p class="headline">${escapeHtml(draft.headline || 'Optimized Resume')}</p>
     ${draft.contactLine ? `<p class="contact">${escapeHtml(draft.contactLine)}</p>` : ''}
     <div class="divider"></div>
-    ${draft.sections.map((section) => `
-      <div class="section">
-        <h3>${escapeHtml(section.title)}</h3>
-        ${section.variant === 'bullets'
-            ? `<ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-            : section.items.map((item) => `<p>${escapeHtml(item)}</p>`).join('')
-        }
-      </div>
-    `).join('')}
+    <table class="layout-table" role="presentation">
+      <tr>
+        <td class="left-col">
+          ${draft.sections
+              .filter((section) => !/skills|keyword coverage/i.test(section.title))
+              .map((section) => `
+                <div class="section">
+                  <h3>${escapeHtml(section.title)}</h3>
+                  ${section.variant === 'bullets'
+                      ? `<ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+                      : section.items.map((item) => `<p>${escapeHtml(item)}</p>`).join('')
+                  }
+                </div>
+              `).join('')}
+        </td>
+        <td class="right-col">
+          ${draft.sections
+              .filter((section) => /skills|keyword coverage/i.test(section.title))
+              .map((section) => `
+                <div class="section">
+                  <h3>${escapeHtml(section.title)}</h3>
+                  <ul class="skills-list">${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+                </div>
+              `).join('')}
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
 `;
@@ -396,7 +418,7 @@ export const Copilot = () => {
             setResumeFileName(file.name);
             setResumeFileData(dataUrl);
             toast.success('Resume attached');
-        } catch (error) {
+        } catch {
             toast.error('Failed to read the selected file');
         }
     };
@@ -489,7 +511,7 @@ export const Copilot = () => {
                 drivers: response.data.drivers,
             }));
             toast.success('Interview probability refreshed');
-        } catch (error) {
+        } catch {
             toast.error('Failed to refresh interview probability');
         } finally {
             setRefreshingPrediction(false);
@@ -527,6 +549,8 @@ export const Copilot = () => {
                 optimizedBulletPoints: response.data.optimizedBulletPoints || [],
                 keywordIncorporationTips: response.data.keywordIncorporationTips || [],
                 optimizationNotes: response.data.optimizationNotes || [],
+                atsGapChecklist: response.data.atsGapChecklist || [],
+                atsTargetBand: response.data.atsTargetBand || null,
             };
 
             setOptimizedResume({
@@ -927,6 +951,11 @@ export const Copilot = () => {
                                     ? `Optimized for ${optimizedResume.targetRole}${jobForm.company ? ` at ${jobForm.company}` : ''}.`
                                     : 'Use the current role field above, then generate a role-targeted resume draft.'}
                             </p>
+                            {optimizedResume?.atsTargetBand ? (
+                                <p className="text-xs mt-2 text-theme-secondary">
+                                    ATS target band: {optimizedResume.atsTargetBand.min}-{optimizedResume.atsTargetBand.max}% (current: {optimizedResume.atsTargetBand.achieved}%)
+                                </p>
+                            ) : null}
                         </div>
                         <div className="flex flex-wrap gap-3 items-center">
                             {optimizedResume?.provider ? <ProviderBadge provider={optimizedResume.provider} /> : null}
@@ -1036,6 +1065,22 @@ export const Copilot = () => {
                                 </div>
 
                                 <div className="space-y-6">
+                                    {optimizedResume.atsGapChecklist?.length ? (
+                                        <div className="rounded-3xl border p-5" style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)' }}>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <h4 className="text-lg font-display font-bold text-theme-heading">Why ATS is not 82+ yet</h4>
+                                                <CopyButton text={optimizedResume.atsGapChecklist.join('\n')} />
+                                            </div>
+                                            <div className="mt-4 space-y-3">
+                                                {optimizedResume.atsGapChecklist.map((item) => (
+                                                    <div key={item} className="rounded-2xl border px-4 py-3 text-sm text-theme-secondary" style={{ borderColor: 'var(--border-color)' }}>
+                                                        {item}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : null}
+
                                     <div className="rounded-3xl border p-5" style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)' }}>
                                         <div className="flex items-center justify-between gap-3">
                                             <h4 className="text-lg font-display font-bold text-theme-heading">Keyword incorporation tips</h4>

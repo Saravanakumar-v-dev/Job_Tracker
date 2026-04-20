@@ -2,6 +2,10 @@ const {
     buildHeuristicSuggestions,
     buildHeuristicResumeOptimization,
 } = require('./analysisService');
+const {
+    uniqueValues,
+    toDisplayLabel,
+} = require('../utils/text');
 
 const RESPONSE_SCHEMA = {
     type: 'object',
@@ -79,6 +83,63 @@ const extractOutputText = (payload) => {
     const outputText = messageItem?.content?.find((item) => item.type === 'output_text')?.text;
 
     return outputText || null;
+};
+
+const startWithActionVerb = (line = '') => {
+    const cleaned = line.replace(/^[-*•]\s*/, '').trim();
+    if (!cleaned) {
+        return cleaned;
+    }
+
+    if (/^(led|built|created|developed|designed|implemented|delivered|drove|optimized|managed|owned)\b/i.test(cleaned)) {
+        return cleaned;
+    }
+
+    return `Delivered ${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`;
+};
+
+const strengthenOptimizationPayload = ({ payload, analysis = {}, targetRole = '' }) => {
+    const requiredTerms = uniqueValues([
+        ...(analysis.missingSkills || []),
+        ...(analysis.missingKeywords || []),
+        ...(analysis.matchedSkills || []),
+    ]).slice(0, 12).map(toDisplayLabel);
+
+    const existingSkillSet = new Set((payload.optimizedSkills || []).map((item) => item.toLowerCase()));
+    const mergedSkills = uniqueValues([
+        ...(payload.optimizedSkills || []),
+        ...requiredTerms.filter((term) => !existingSkillSet.has(term.toLowerCase())),
+    ]).slice(0, 16);
+
+    const rewrittenBullets = uniqueValues(
+        (payload.optimizedBulletPoints || []).map((bullet) => {
+            const actionLine = startWithActionVerb(bullet);
+            if (/\b\d+(?:\.\d+)?%|\$\d[\d,.]*|\b\d+\+?\b/.test(actionLine)) {
+                return actionLine;
+            }
+
+            return `${actionLine}, improving measurable outcomes (e.g., cycle time, quality, conversion, or cost).`;
+        }),
+    ).slice(0, 6);
+
+    const summaryTerms = requiredTerms.slice(0, 4).join(', ');
+    const upgradedSummary = [
+        payload.professionalSummary,
+        summaryTerms ? `Core ATS-aligned capabilities include ${summaryTerms}.` : '',
+        targetRole ? `This draft is intentionally tailored for ${targetRole} responsibilities and recruiter screening patterns.` : '',
+    ].filter(Boolean).join(' ');
+
+    return {
+        ...payload,
+        professionalSummary: upgradedSummary,
+        optimizedSkills: mergedSkills,
+        optimizedBulletPoints: rewrittenBullets,
+        optimizationNotes: uniqueValues([
+            ...(payload.optimizationNotes || []),
+            'Prioritize quantified outcomes in every recent role bullet to improve ATS and recruiter confidence.',
+            'Keep section titles standard (Summary, Skills, Experience, Projects, Education) for parser compatibility.',
+        ]).slice(0, 6),
+    };
 };
 
 const generateResumeSuggestions = async ({ resumeText, jobDescription, analysis }) => {
@@ -174,7 +235,11 @@ const optimizeResumeForRole = async ({
     });
 
     if (!process.env.OPENAI_API_KEY) {
-        return fallback;
+        return strengthenOptimizationPayload({
+            payload: fallback,
+            analysis,
+            targetRole,
+        });
     }
 
     try {
@@ -236,7 +301,7 @@ const optimizeResumeForRole = async ({
 
         const parsed = JSON.parse(outputText);
 
-        return {
+        const optimized = {
             provider: 'openai',
             targetRole: targetRole || fallback.targetRole,
             optimizedHeadline: parsed.optimizedHeadline || fallback.optimizedHeadline,
@@ -246,12 +311,24 @@ const optimizeResumeForRole = async ({
             keywordIncorporationTips: parsed.keywordIncorporationTips || fallback.keywordIncorporationTips,
             optimizationNotes: parsed.optimizationNotes || fallback.optimizationNotes,
         };
+
+        return strengthenOptimizationPayload({
+            payload: optimized,
+            analysis,
+            targetRole,
+        });
     } catch (error) {
-        return {
+        const heuristic = {
             ...fallback,
             provider: 'heuristic',
             fallbackReason: error.message,
         };
+
+        return strengthenOptimizationPayload({
+            payload: heuristic,
+            analysis,
+            targetRole,
+        });
     }
 };
 
